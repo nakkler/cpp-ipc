@@ -22,6 +22,7 @@ struct IPC_EXPORT chan_impl {
     static ipc::handle_t inited();
 
     static bool connect   (ipc::handle_t * ph, char const * name, unsigned mode);
+    static bool connect   (ipc::handle_t * ph, prefix, char const * name, unsigned mode);
     static bool reconnect (ipc::handle_t * ph, unsigned mode);
     static void disconnect(ipc::handle_t h);
     static void destroy   (ipc::handle_t h);
@@ -52,6 +53,10 @@ public:
 
     explicit chan_wrapper(char const * name, unsigned mode = ipc::sender)
         : connected_{this->connect(name, mode)} {
+    }
+
+    chan_wrapper(prefix pref, char const * name, unsigned mode = ipc::sender)
+        : connected_{this->connect(pref, name, mode)} {
     }
 
     chan_wrapper(chan_wrapper&& rhs) noexcept
@@ -101,6 +106,11 @@ public:
         if (name == nullptr || name[0] == '\0') return false;
         detail_t::disconnect(h_); // clear old connection
         return connected_ = detail_t::connect(&h_, name, mode_ = mode);
+    }
+    bool connect(prefix pref, char const * name, unsigned mode = ipc::sender | ipc::receiver) {
+        if (name == nullptr || name[0] == '\0') return false;
+        detail_t::disconnect(h_); // clear old connection
+        return connected_ = detail_t::connect(&h_, pref, name, mode_ = mode);
     }
 
     /**
@@ -169,26 +179,22 @@ template <relat Rp, relat Rc, trans Ts>
 using chan = chan_wrapper<ipc::wr<Rp, Rc, Ts>>;
 
 /**
- * class route
+ * \class route
  *
- * You could use one producer/server/sender for sending messages to a route,
- * then all the consumers/clients/receivers which are receiving with this route,
- * would receive your sent messages.
- *
- * A route could only be used in 1 to N
- * (one producer/writer to multi consumers/readers)
+ * \note You could use one producer/server/sender for sending messages to a route,
+ *       then all the consumers/clients/receivers which are receiving with this route,
+ *       would receive your sent messages.
+ *       A route could only be used in 1 to N (one producer/writer to multi consumers/readers).
 */
-
 using route = chan<relat::single, relat::multi, trans::broadcast>;
 
 /**
- * class channel
+ * \class channel
  *
- * You could use multi producers/writers for sending messages to a channel,
- * then all the consumers/readers which are receiving with this channel,
- * would receive your sent messages.
+ * \note You could use multi producers/writers for sending messages to a channel,
+ *       then all the consumers/readers which are receiving with this channel,
+ *       would receive your sent messages.
 */
-
 using channel = chan<relat::multi, relat::multi, trans::broadcast>;
 
 } // namespace ipc

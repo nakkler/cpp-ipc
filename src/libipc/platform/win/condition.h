@@ -44,15 +44,15 @@ public:
 
     bool open(char const *name) noexcept {
         close();
-        if (!sem_.open((std::string{"_cond_sem_"} + name).c_str())) {
+        if (!sem_.open((std::string{name} + "_COND_SEM_").c_str())) {
             return false;
         }
         auto finally_sem = ipc::guard([this] { sem_.close(); }); // close when failed
-        if (!lock_.open((std::string{"_cond_lock_"} + name).c_str())) {
+        if (!lock_.open((std::string{name} + "_COND_LOCK_").c_str())) {
             return false;
         }
         auto finally_lock = ipc::guard([this] { lock_.close(); }); // close when failed
-        if (!shm_.acquire((std::string{"_cond_shm_"} + name).c_str(), sizeof(std::int32_t))) {
+        if (!shm_.acquire((std::string{name} + "_COND_SHM_").c_str(), sizeof(std::int32_t))) {
             return false;
         }
         finally_lock.dismiss();
@@ -76,7 +76,7 @@ public:
         }
         DWORD ms = (tm == invalid_value) ? INFINITE : static_cast<DWORD>(tm);
         /**
-         * @see
+         * \see
          *  - https://www.microsoft.com/en-us/research/wp-content/uploads/2004/12/ImplementingCVs.pdf
          *  - https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-signalobjectandwait
         */

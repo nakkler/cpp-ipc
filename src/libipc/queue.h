@@ -18,6 +18,7 @@
 #include "libipc/utility/log.h"
 #include "libipc/platform/detail.h"
 #include "libipc/circ/elem_def.h"
+#include "libipc/memory/resource.h"
 
 namespace ipc {
 namespace detail {
@@ -29,7 +30,7 @@ protected:
 
     template <typename Elems>
     Elems* open(char const * name) {
-        if (name == nullptr || name[0] == '\0') {
+        if (!is_valid_string(name)) {
             ipc::error("fail open waiter: name is empty!\n");
             return nullptr;
         }
@@ -103,7 +104,7 @@ public:
 
     explicit queue_base(char const * name)
         : queue_base{} {
-        elems_ = open<elems_t>(name);
+        elems_ = queue_conn::template open<elems_t>(name);
     }
 
     explicit queue_base(elems_t * elems) noexcept
@@ -114,6 +115,12 @@ public:
 
     /* not virtual */ ~queue_base() {
         base_t::close();
+    }
+
+    bool open(char const * name) noexcept {
+        base_t::close();
+        elems_ = queue_conn::template open<elems_t>(name);
+        return elems_ != nullptr;
     }
 
     elems_t       * elems()       noexcept { return elems_; }
